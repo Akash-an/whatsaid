@@ -27,6 +27,23 @@ class ChatResponse(BaseModel):
     updated_at: str
 
 
+class ParticipantCount(BaseModel):
+    sender: str
+    count: int
+
+class ChatSummaryResponse(BaseModel):
+    summary: str
+    error: Optional[str] = None
+
+class SavedSummary(BaseModel):
+    id: int
+    chat_id: int
+    date_from: Optional[str]
+    date_to: Optional[str]
+    summary: str
+    created_at: str
+
+
 # ---------------------------------------------------------------------------
 # Messages
 # ---------------------------------------------------------------------------
@@ -113,6 +130,15 @@ class StatsResponse(BaseModel):
     platform_breakdown: list[PlatformCount]
     daily_message_counts: list[DailyMessageCount]
     top_link_senders: list[SenderLinkCount]
+
+
+class ChatInsightsResponse(BaseModel):
+    chat_id: int
+    chat_name: str
+    total_messages: int
+    participants: list[ParticipantCount]
+    daily_activity: list[DailyMessageCount]
+    top_platforms: list[PlatformCount]
 
 
 # ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 # Whatsaid Web UI - Design Document
 
 ## 1. Overview & Goals
-The current `whatsaid` application extracts WhatsApp chat information into a local SQLite database (`resources.db`) and exports it to an Excel spreadsheet. The goal of this project is to build a rich, interactive Web UI for data visualization, allowing users to deeply explore, filter, and review the extracted data without relying on static spreadsheets.
+The current `whatsaid` application extracts WhatsApp chat information into a local SQLite database (`data/resources.db`) and exports it to an Excel spreadsheet. The goal of this project is to build a rich, interactive Web UI for data visualization, allowing users to deeply explore, filter, and review the extracted data without relying on static spreadsheets.
 
 The Web UI will focus on visually engaging dashboards, interactive data tables for resource review, and deep insights into chatting patterns and extracted links.
 
@@ -35,9 +35,14 @@ The core functional page replacing the Excel sheet.
 *   **Context Expansion:** Clicking a resource expands a pane showing the exact conversational context (the 3 surrounding messages).
 *   **Quick Actions:** Buttons to quickly update the `status` of a resource (e.g., marking a link as "Reviewed").
 
-### 4.3. Chats Registry
-*   A list of all imported chats (`chats` table).
-*   Shows metadata: first message date, last message date, and total import count.
+### 4.3. Chats Registry & Insights
+*   **Registry:** A list of all imported chats (`chats` table). Shows metadata: first message date, last message date, and total import count.
+*   **Chat Insights Dashboard:** A dedicated drill-down page for a specific chat.
+    *   **Filters:** Date range picker to isolate specific timeframes.
+    *   **Activity Line/Bar Chart:** Granular visualization of message frequency (hourly/daily depending on timeframe).
+    *   **Top Participants:** Lists out active members and their respective message counts.
+    *   **Top Platforms:** Shows the most popular resource platforms shared in that specific chat.
+*   **AI Chat Summary (LangGraph):** A button that dynamically chunks message history for the selected date range and performs a "rolling summary" via LangGraph and an LLM, rendering a comprehensive textual synopsis of the chat events without blowing out context windows.
 
 ### 4.4. Raw Message Explorer
 *   A searchable, chronological view of the `messages` table.
@@ -59,6 +64,8 @@ The FastAPI backend exposes the following REST endpoints to serve the frontend:
 | :--- | :--- | :--- |
 | `/api/stats` | `GET` | Returns aggregated metrics (counts, charts data) |
 | `/api/chats` | `GET` | Returns list of all chats |
+| `/api/chats/{id}/insights` | `GET` | Returns aggregated analytics specific to a single chat |
+| `/api/chats/{id}/summary` | `POST` | Triggers the LangGraph summarizer for a chat (w/ date range) |
 | `/api/resources` | `GET` | Returns paginated/filtered list of resources with joined context |
 | `/api/resources/{id}` | `PATCH`| Updates the `status` or metadata of a specific resource |
 | `/api/messages` | `GET` | Returns paginated list of raw messages |
@@ -70,7 +77,7 @@ The FastAPI backend exposes the following REST endpoints to serve the frontend:
 flowchart TD
     subgraph Data Pipeline (Python)
         A[WhatsApp Export] --> B(Parser)
-        B --> C[(SQLite DB: resources.db)]
+        B --> C[(SQLite DB: data/resources.db)]
         C --> D(Enrichment)
     end
     

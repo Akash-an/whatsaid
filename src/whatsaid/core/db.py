@@ -100,6 +100,20 @@ def init_db(db_path: str = DEFAULT_DB_PATH) -> None:
                 cursor.execute(f"ALTER TABLE resources ADD COLUMN {col} {col_type}")
             except Exception:
                 pass  # Column already exists — safe to ignore
+                
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS chat_summaries (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                chat_id     INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+                date_from   TEXT,
+                date_to     TEXT,
+                summary     TEXT,
+                created_at  TEXT DEFAULT (datetime('now'))
+            )
+        """)
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_chat_summaries_chat ON chat_summaries(chat_id)"
+        )
         logger.info("Schema migrated", extra={"db_path": db_path})
 
 def clear_db(db_path: str = DEFAULT_DB_PATH) -> None:

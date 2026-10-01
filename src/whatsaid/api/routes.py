@@ -144,6 +144,76 @@ def list_chats() -> list[ChatResponse]:
     return [ChatResponse(**r) for r in rows]
 
 
+from .schemas import ChatInsightsResponse
+
+@router.get(
+    "/chats/{chat_id}/insights",
+    response_model=ChatInsightsResponse,
+    summary="Detailed summary and insights for a specific chat",
+)
+def get_chat_insights(
+    chat_id: int,
+    date_from: Optional[str] = Query(None, description="Inclusive start date (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Inclusive end date (YYYY-MM-DD)"),
+) -> ChatInsightsResponse:
+    data = queries.get_chat_insights(
+        chat_id=chat_id,
+        db_path=_db(),
+        date_from=date_from,
+        date_to=date_to,
+    )
+    if data is None:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    return ChatInsightsResponse(**data)
+
+from .schemas import ChatSummaryResponse
+
+@router.post(
+    "/chats/{chat_id}/summary",
+    response_model=ChatSummaryResponse,
+    summary="Generate an LLM summary for a specific chat and date range",
+)
+def generate_chat_summary(
+    chat_id: int,
+    date_from: Optional[str] = Query(None, description="Inclusive start date (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Inclusive end date (YYYY-MM-DD)"),
+) -> ChatSummaryResponse:
+    from ..llm.summarizer import run_summary_workflow
+    
+    result = run_summary_workflow(
+        chat_id=chat_id,
+        date_from=date_from,
+        date_to=date_to,
+        db_path=_db()
+    )
+    
+    if result["status"] == "failed":
+        raise HTTPException(status_code=500, detail=result.get("error", "Summary generation failed"))
+        
+    summary_text = result.get("final_summary") or "No summary generated."
+    
+    if summary_text != "No messages found for this date range.":
+        from .queries import save_chat_summary
+        save_chat_summary(_db(), chat_id, date_from, date_to, summary_text)
+        
+    return ChatSummaryResponse(
+        summary=summary_text,
+        error=None
+    )
+
+from .schemas import SavedSummary
+
+@router.get(
+    "/chats/{chat_id}/summaries",
+    response_model=list[SavedSummary],
+    summary="Get past summaries for a chat",
+)
+def list_chat_summaries(chat_id: int) -> list[SavedSummary]:
+    from .queries import get_chat_summaries
+    rows = get_chat_summaries(_db(), chat_id)
+    return [SavedSummary(**row) for row in rows]
+
+
 # ---------------------------------------------------------------------------
 # Resources
 # ---------------------------------------------------------------------------

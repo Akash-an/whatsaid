@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Calendar } from 'lucide-react';
 import './Chats.css';
 import logger from '../lib/logger';
 
 export default function Chats() {
+  const navigate = useNavigate();
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -74,7 +76,12 @@ export default function Chats() {
                 </tr>
               ) : (
                 chats.map(chat => (
-                  <tr key={chat.id} className="chat-row">
+                  <tr 
+                    key={chat.id} 
+                    className="chat-row" 
+                    onClick={() => navigate(`/chats/${chat.id}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <td className="chat-name-cell">
                       <MessageSquare size={16} className="chat-icon" />
                       {chat.name}

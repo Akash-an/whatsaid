@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-A new **"Ask"** page added to the sidebar. The user types a free-form English question about their WhatsApp chat data. The question is sent to a backend endpoint that uses an LLM to translate it into a safe SQLite `SELECT` statement, executes it against `resources.db`, and returns the result as structured JSON. The frontend renders the result as a dynamic, paginated table and shows the generated SQL for transparency.
+A new **"Ask"** page added to the sidebar. The user types a free-form English question about their WhatsApp chat data. The question is sent to a backend endpoint that uses an LLM to translate it into a safe SQLite `SELECT` statement, executes it against `data/resources.db`, and returns the result as structured JSON. The frontend renders the result as a dynamic, paginated table and shows the generated SQL for transparency.
 
 **Example queries:**
 - *"How many links did Alice share in June?"*
@@ -21,7 +21,7 @@ sequenceDiagram
     participant U as Browser (React)
     participant A as FastAPI /api/query
     participant L as LLM (OpenAI gpt-4o-mini via litellm)
-    participant DB as SQLite (resources.db)
+    participant DB as SQLite (data/resources.db)
 
     U->>A: POST /api/query { "question": "...", "page": 1 }
     A->>L: System prompt + schema context + question → generate SQL
@@ -83,7 +83,7 @@ def execute_raw_select(
 
 ```python
 SCHEMA_CONTEXT = """
--- SQLite schema for 'resources.db'
+-- SQLite schema for 'data/resources.db'
 CREATE TABLE chats (
     id INTEGER PRIMARY KEY,
     name TEXT,

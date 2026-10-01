@@ -34,7 +34,7 @@ This repository follows a decoupled architecture separating the backend data pip
 - **`ui/`**: The React/Vite frontend application that visualizes the chat data.
 - **`docs/`**: Contains architectural guidelines, database schemas, and UI design documents.
 - **`data/` & `resources/`**: Storage directories for raw WhatsApp chat exports and auxiliary files.
-- **`resources.db`**: The local SQLite database where parsed chat data is persisted.
+- **`data/resources.db`**: The local SQLite database where parsed chat data is persisted.
 
 ## 6. Local Development Environment
 - **Running the App (`start.sh`):** A helper script `./start.sh` is provided in the project root. It safely finds and kills any dangling processes on ports 8000 and 5173, activates the Python virtual environment, and spins up both the FastAPI backend and Vite frontend concurrently. Agents should recommend this script for starting the application.
