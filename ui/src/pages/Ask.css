@@ -1,0 +1,453 @@
+/* ============================================================
+   Ask Page — Natural Language Query
+   Follows the existing design token system from index.css.
+   ============================================================ */
+
+/* ----------------------------------------------------------
+   Page shell
+   ---------------------------------------------------------- */
+.ask-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 1.5rem;
+}
+
+/* ----------------------------------------------------------
+   Hero header (shown only in empty state)
+   ---------------------------------------------------------- */
+.ask-hero {
+  text-align: center;
+  padding: 2rem 0 0.5rem;
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.ask-hero h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
+}
+
+.ask-hero p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+/* ----------------------------------------------------------
+   Query input area
+   ---------------------------------------------------------- */
+.ask-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Animated gradient border wrapper */
+.ask-textarea-wrapper {
+  position: relative;
+  border-radius: 14px;
+  padding: 2px; /* creates the border thickness */
+  background: linear-gradient(
+    135deg,
+    var(--accent-purple),
+    var(--accent-cyan),
+    var(--accent-purple)
+  );
+  background-size: 300% 300%;
+  animation: border-glow 4s ease infinite;
+}
+
+@keyframes border-glow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.ask-input-row {
+  display: flex;
+  gap: 0;
+  background: var(--bg-color);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ask-textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 1rem;
+  line-height: 1.6;
+  padding: 1rem 1.25rem;
+  resize: none;
+  outline: none;
+  min-height: 60px;
+  max-height: 160px;
+}
+
+.ask-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.ask-submit-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--accent-purple);
+  color: #fff;
+  border: none;
+  padding: 0 1.5rem;
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  white-space: nowrap;
+  border-radius: 0 12px 12px 0;
+}
+
+.ask-submit-btn:hover:not(:disabled) {
+  background: var(--accent-purple-hover);
+}
+
+.ask-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Example chips */
+.ask-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ask-chip {
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: var(--accent-purple-hover);
+  border-radius: 9999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.8rem;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ask-chip:hover {
+  background: rgba(139, 92, 246, 0.18);
+  border-color: var(--accent-purple);
+}
+
+/* ----------------------------------------------------------
+   Loading skeleton
+   ---------------------------------------------------------- */
+.ask-thinking {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  padding: 0.5rem 0;
+}
+
+.ask-thinking-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-purple);
+  animation: thinking-pulse 1.2s ease-in-out infinite;
+}
+
+.ask-thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+.ask-thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes thinking-pulse {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40%            { opacity: 1;   transform: scale(1.2); }
+}
+
+.ask-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem;
+}
+
+.skeleton-line {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 0%,
+    rgba(255,255,255,0.1)  50%,
+    rgba(255,255,255,0.04) 100%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+.skeleton-line:nth-child(1) { width: 60%; }
+.skeleton-line:nth-child(2) { width: 85%; }
+.skeleton-line:nth-child(3) { width: 75%; }
+.skeleton-line:nth-child(4) { width: 55%; }
+
+@keyframes shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* ----------------------------------------------------------
+   Results area
+   ---------------------------------------------------------- */
+.ask-results {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: fadeIn 0.3s ease-out forwards;
+  flex: 1;
+  min-height: 0;
+}
+
+/* SQL disclosure block */
+.ask-sql-disclosure {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ask-sql-disclosure summary {
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  list-style: none; /* hide default marker */
+}
+
+.ask-sql-disclosure summary::-webkit-details-marker { display: none; }
+
+.ask-sql-disclosure summary:hover {
+  color: var(--text-primary);
+}
+
+.ask-sql-pre {
+  margin: 0;
+  padding: 0.75rem 1rem 1rem;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--accent-cyan);
+  white-space: pre-wrap;
+  word-break: break-all;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Result summary bar */
+.ask-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ask-result-count {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.ask-result-count strong {
+  color: var(--text-primary);
+}
+
+.ask-new-query-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  font-family: var(--font-family);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+}
+
+.ask-new-query-btn:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+/* Actions group (Copy + New Query) */
+.ask-summary-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Copy button */
+.ask-copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  font-family: var(--font-family);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ask-copy-btn:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.ask-copy-btn--success {
+  border-color: #34D399;
+  color: #34D399;
+  background: rgba(16, 185, 129, 0.08);
+}
+
+/* Result table */
+.ask-table-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.ask-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.ask-table th {
+  padding: 0.875rem 1rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  white-space: nowrap;
+}
+
+.ask-table td {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ask-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.ask-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Auto-linked URLs in results */
+.ask-table td a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+}
+
+.ask-table td a:hover {
+  text-decoration: underline;
+}
+
+/* NULL / empty cell */
+.ask-cell-null {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ----------------------------------------------------------
+   Empty / error states
+   ---------------------------------------------------------- */
+.ask-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.ask-error-banner {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  color: #FCA5A5;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+/* ----------------------------------------------------------
+   Pagination (reuses Resources page pattern)
+   ---------------------------------------------------------- */
+.ask-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 0.25rem;
+}
+
+.ask-pagination button {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  font-family: var(--font-family);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ask-pagination button:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--text-secondary);
+}
+
+.ask-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ask-page-info {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}

@@ -23,6 +23,39 @@ _MSG_REGEX = re.compile(
 )
 
 
+def _parse_whatsapp_date(ts_str: str) -> str:
+    """Attempt to parse WhatsApp date string to standard ISO format."""
+    from datetime import datetime
+    clean_ts = ts_str.replace('\u202f', ' ').strip()
+    
+    formats = [
+        "%d/%m/%y, %I:%M %p",
+        "%d/%m/%Y, %I:%M %p",
+        "%d/%m/%y, %H:%M",
+        "%d/%m/%Y, %H:%M",
+        "%d/%m/%y, %I:%M:%S %p",
+        "%d/%m/%Y, %I:%M:%S %p",
+        "%d/%m/%y, %H:%M:%S",
+        "%d/%m/%Y, %H:%M:%S",
+    ]
+    
+    for fmt in formats:
+        try:
+            return datetime.strptime(clean_ts, fmt).strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+            
+    # Try MM/DD/YY fallback just in case
+    mm_formats = [f.replace("%d/%m/", "%m/%d/") for f in formats]
+    for fmt in mm_formats:
+        try:
+            return datetime.strptime(clean_ts, fmt).strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+            
+    return ts_str
+
+
 def _parse_lines(lines: list[str]) -> list[dict[str, str | list[str]]]:
     """Parse raw chat lines into a list of message dicts."""
     messages: list[dict] = []
@@ -38,7 +71,11 @@ def _parse_lines(lines: list[str]) -> list[dict[str, str | list[str]]]:
             if current_msg:
                 messages.append(current_msg)
             timestamp, sender, text = match.groups()
-            current_msg = {"timestamp": timestamp, "sender": sender, "text": [text]}
+            current_msg = {
+                "timestamp": _parse_whatsapp_date(timestamp),
+                "sender": sender,
+                "text": [text]
+            }
         else:
             # Continuation of previous message
             if current_msg:

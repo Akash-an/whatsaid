@@ -57,7 +57,7 @@
   color: var(--text-secondary);
 }
 
-.filter-group select, .status-select {
+.filter-group select {
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
@@ -69,8 +69,56 @@
   cursor: pointer;
 }
 
-.filter-group select:focus, .status-select:focus {
+.filter-group select:focus {
   border-color: var(--accent-purple);
+}
+
+/* Date range filter */
+.date-filter-group {
+  flex-wrap: nowrap;
+}
+
+.date-input {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.45rem 0.5rem;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  outline: none;
+  cursor: pointer;
+  width: 130px;
+  color-scheme: dark;
+}
+
+.date-input:focus {
+  border-color: var(--accent-purple);
+}
+
+.date-separator {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.date-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  border-radius: 4px;
+  padding: 0.3rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.date-clear-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.55);
 }
 
 .table-container {
@@ -140,11 +188,17 @@
   font-weight: 500;
 }
 
-.url-cell {
-  max-width: 300px;
+.date-cell {
+  color: var(--text-muted);
+  font-size: 0.8rem;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.url-cell {
+  max-width: 320px;
+  /* Allow wrapping so notes/tags can appear below the link */
+  white-space: normal;
+  word-break: break-word;
 }
 
 .url-cell a {
@@ -161,30 +215,6 @@
 
 .ext-link-icon {
   opacity: 0.7;
-}
-
-/* Status Badges */
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.6rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.status-badge.to-review {
-  background: rgba(245, 158, 11, 0.15);
-  color: #FBBF24;
-}
-
-.status-badge.approved {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34D399;
-}
-
-.status-badge.archived {
-  background: rgba(100, 116, 139, 0.15);
-  color: #94A3B8;
 }
 
 /* Expanded Context Row */
@@ -278,4 +308,223 @@
 .page-info {
   font-size: 0.875rem;
   color: var(--text-secondary);
+}
+
+/* ---- Actions cell layout ---- */
+.actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+/* ---- Enrich button ---- */
+.enrich-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.enrich-btn--enrich {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #a78bfa;
+}
+
+.enrich-btn--enrich:hover {
+  background: rgba(139, 92, 246, 0.28);
+  border-color: rgba(139, 92, 246, 0.7);
+}
+
+.enrich-btn--loading {
+  background: rgba(100, 116, 139, 0.15);
+  border-color: rgba(100, 116, 139, 0.3);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.enrich-btn--re-enrich {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+
+.enrich-btn--re-enrich:hover {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: rgba(16, 185, 129, 0.6);
+}
+
+.enrich-btn--retry {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}
+
+.enrich-btn--retry:hover {
+  background: rgba(245, 158, 11, 0.22);
+  border-color: rgba(245, 158, 11, 0.6);
+}
+
+/* Spinner animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ---- Enriched metadata in expanded panel ---- */
+.enriched-section {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.enriched-section h4 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #a78bfa;
+  margin-bottom: 0.6rem;
+  letter-spacing: 0.05em;
+}
+
+.enriched-notes {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  margin: 0 0 0.75rem 0;
+  line-height: 1.5;
+}
+
+.enriched-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.tag-chip {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  color: #c4b5fd;
+  font-weight: 500;
+}
+
+.enriched-at {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ---- Enrichment failure notice ---- */
+.enrichment-failed {
+  margin-bottom: 1rem;
+  padding: 0.6rem 0.9rem;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #fca5a5;
+}
+
+.enrichment-failed p {
+  margin: 0;
+}
+
+.enrichment-error-detail {
+  margin-top: 0.3rem !important;
+  font-size: 0.72rem;
+  opacity: 0.75;
+  font-family: monospace;
+  word-break: break-all;
+}
+
+/* ---- Inline enrichment preview (shown directly on the row) ---- */
+
+.row-notes {
+  margin: 0.25rem 0 0.3rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  /* Clamp to 2 lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.row-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+}
+
+/* Smaller tag chip variant for inline row display */
+.tag-chip--sm {
+  padding: 0.1rem 0.4rem;
+  font-size: 0.67rem;
+}
+
+/* ✦ dot shown next to the platform badge when a resource has been enriched */
+.enriched-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a78bfa;
+  margin-left: 5px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* ---- Toolbar Actions ---- */
+.copy-csv-btn, .enrich-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+}
+
+.copy-csv-btn:hover:not(:disabled), .enrich-all-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.copy-csv-btn:disabled, .enrich-all-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.copy-csv-btn--copied {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
 }

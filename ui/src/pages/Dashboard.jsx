@@ -6,6 +6,8 @@ import {
 import { MessageSquare, Link2, Users, AlertCircle } from 'lucide-react';
 import './Dashboard.css';
 
+import logger from '../lib/logger';
+
 const COLORS = ['#8B5CF6', '#06B6D4', '#F59E0B', '#10B981', '#EF4444', '#3B82F6', '#8B5CF6'];
 
 export default function Dashboard() {
@@ -15,6 +17,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function fetchStats() {
+      logger.debug('dashboard:fetch', 'Fetching stats');
       try {
         const response = await fetch('/api/stats');
         if (!response.ok) {
@@ -22,7 +25,9 @@ export default function Dashboard() {
         }
         const data = await response.json();
         setStats(data);
+        logger.info('dashboard:fetch', 'Stats loaded');
       } catch (err) {
+        logger.warn('dashboard:fetch', 'API error', { detail: err.message });
         setError(err.message);
       } finally {
         setLoading(false);

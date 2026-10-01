@@ -34,8 +34,12 @@ def get_cursor(db_path: str = DEFAULT_DB_PATH) -> Generator[sqlite3.Cursor, None
         conn.close()
 
 
+from ..logging import get_logger
+logger = get_logger(__name__)
+
 def init_db(db_path: str = DEFAULT_DB_PATH) -> None:
     """Create the full schema if it does not already exist."""
+    logger.debug("DB opened", extra={"db_path": db_path})
     with get_cursor(db_path) as cursor:
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS chats (
@@ -76,13 +80,27 @@ def init_db(db_path: str = DEFAULT_DB_PATH) -> None:
                 context          TEXT,
                 notes            TEXT,
                 status           TEXT DEFAULT 'To Review',
+                enrichment_status TEXT,
+                enriched_at      TEXT,
+                enrichment_error TEXT,
                 UNIQUE (chat_id, canonical_url)
             )
         """)
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_resources_chat ON resources(chat_id)"
         )
-
+        # Migration: add enrichment columns to pre-existing databases that
+        # were created before this schema version.
+        for col, col_type in [
+            ("enrichment_status", "TEXT"),
+            ("enriched_at", "TEXT"),
+            ("enrichment_error", "TEXT"),
+        ]:
+            try:
+                cursor.execute(f"ALTER TABLE resources ADD COLUMN {col} {col_type}")
+            except Exception:
+                pass  # Column already exists — safe to ignore
+        logger.info("Schema migrated", extra={"db_path": db_path})
 
 def clear_db(db_path: str = DEFAULT_DB_PATH) -> None:
     """Delete the database file and re-initialise a clean schema."""

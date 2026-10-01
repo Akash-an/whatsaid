@@ -60,11 +60,15 @@ class ResourceResponse(BaseModel):
     context: Optional[str]
     notes: Optional[str]
     status: Optional[str]
+    enrichment_status: Optional[str] = None
+    enriched_at: Optional[str] = None
+    enrichment_error: Optional[str] = None
 
     # Joined field from chats table (may be None if query doesn't join)
     chat_name: Optional[str] = None
-    # Joined field from messages table
+    # Joined fields from messages table
     sender: Optional[str] = None
+    message_timestamp: Optional[str] = None
 
 
 class ResourceStatusUpdate(BaseModel):
@@ -73,6 +77,13 @@ class ResourceStatusUpdate(BaseModel):
     notes: Optional[str] = None
     title: Optional[str] = None
     tags: Optional[str] = None
+
+
+class EnrichmentResponse(BaseModel):
+    """Response body for POST /api/resources/{id}/enrich."""
+    resource_id: int
+    status: str   # 'pending' | 'done' | 'failed'
+    message: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -113,3 +124,27 @@ class PaginatedResponse(BaseModel):
     page: int
     page_size: int
     items: list
+
+
+# ---------------------------------------------------------------------------
+# Natural-language query (Ask page)
+# ---------------------------------------------------------------------------
+
+class NLQueryRequest(BaseModel):
+    """Request body for POST /api/query."""
+
+    question: str
+    page: int = 1
+
+
+class NLQueryResponse(BaseModel):
+    """Response body for POST /api/query."""
+
+    sql: str            # Generated SELECT shown to the user for transparency
+    columns: list[str]  # Column header names derived from the query result
+    rows: list[list]    # Page of result rows, each serialised as a plain list
+    row_count: int      # Number of rows on this page
+    total_count: int    # Total matching rows across all pages
+    page: int           # Current page (1-based)
+    total_pages: int    # Total number of pages
+

@@ -1,11 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
-import { LayoutDashboard, Link2, MessageSquare, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, Link2, MessageSquare, MessageCircle, Sparkles, Terminal } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard';
 import Resources from './pages/Resources';
 import Chats from './pages/Chats';
 import Messages from './pages/Messages';
-
+import Ask from './pages/Ask';
+import Logs from './pages/Logs';
 
 
 function App() {
@@ -45,6 +46,18 @@ function App() {
                   Messages
                 </NavLink>
               </li>
+              <li>
+                <NavLink to="/ask" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                  <Sparkles size={20} />
+                  Ask
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/logs" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                  <Terminal size={20} />
+                  Logs
+                </NavLink>
+              </li>
             </ul>
           </nav>
         </aside>
@@ -61,6 +74,8 @@ function App() {
               <Route path="/resources" element={<Resources />} />
               <Route path="/chats" element={<Chats />} />
               <Route path="/messages" element={<Messages />} />
+              <Route path="/ask" element={<Ask />} />
+              <Route path="/logs" element={<Logs />} />
             </Routes>
           </div>
         </main>

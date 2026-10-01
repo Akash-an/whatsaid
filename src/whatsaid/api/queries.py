@@ -115,8 +115,17 @@ def get_resources(
     platform: Optional[str] = None,
     status: Optional[str] = None,
     search: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
 ) -> tuple[int, list[dict]]:
-    """Return (total_count, page_of_rows) with optional filters."""
+    """Return (total_count, page_of_rows) with optional filters.
+
+    Args:
+        date_from: Inclusive start date in YYYY-MM-DD format. Filters on the
+            timestamp of the first associated message.
+        date_to:   Inclusive end date in YYYY-MM-DD format. The entire
+            calendar day is included.
+    """
     conn = get_connection(db_path)
     cur = conn.cursor()
 
@@ -136,6 +145,13 @@ def get_resources(
         conditions.append("(r.canonical_url LIKE ? OR r.context LIKE ? OR r.notes LIKE ?)")
         like = f"%{search}%"
         params.extend([like, like, like])
+    if date_from:
+        # DATE() normalises full ISO datetimes to bare dates for comparison
+        conditions.append("DATE(m.timestamp) >= ?")
+        params.append(date_from)
+    if date_to:
+        conditions.append("DATE(m.timestamp) <= ?")
+        params.append(date_to)
 
     where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
@@ -152,7 +168,7 @@ def get_resources(
     offset = (page - 1) * page_size
     cur.execute(
         f"""
-        SELECT r.*, c.name AS chat_name, m.sender
+        SELECT r.*, c.name AS chat_name, m.sender, m.timestamp AS message_timestamp
         {base_query}
         ORDER BY r.id DESC
         LIMIT ? OFFSET ?
@@ -213,6 +229,46 @@ def update_resource(
     return row
 
 
+def get_resource_by_id(
+    resource_id: int,
+    *,
+    db_path: str = DEFAULT_DB_PATH,
+) -> Optional[dict]:
+    """Return a single resource row with joined chat_name and sender, or None."""
+    conn = get_connection(db_path)
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT r.*, c.name AS chat_name, m.sender
+        FROM resources r
+        LEFT JOIN chats c ON r.chat_id = c.id
+        LEFT JOIN messages m ON r.first_message_id = m.id
+        WHERE r.id = ?
+        """,
+        (resource_id,),
+    )
+    row = cur.fetchone()
+    conn.close()
+    return _row_to_dict(row) if row else None
+
+
+def set_enrichment_status(
+    resource_id: int,
+    status: str,
+    *,
+    db_path: str = DEFAULT_DB_PATH,
+) -> None:
+    """Set the enrichment_status column for a resource (e.g. 'pending')."""
+    conn = get_connection(db_path)
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE resources SET enrichment_status = ? WHERE id = ?",
+        (status, resource_id),
+    )
+    conn.commit()
+    conn.close()
+
+
 # ---------------------------------------------------------------------------
 # Messages
 # ---------------------------------------------------------------------------
@@ -253,3 +309,69 @@ def get_messages(
     rows = _rows_to_dicts(cur.fetchall())
     conn.close()
     return total, rows
+
+
+# ---------------------------------------------------------------------------
+# Natural-language query execution
+# ---------------------------------------------------------------------------
+
+def execute_raw_select(
+    sql: str,
+    *,
+    db_path: str = DEFAULT_DB_PATH,
+    page: int = 1,
+    page_size: int = 200,
+) -> tuple[list[str], list[list], int]:
+    """Execute a pre-validated SELECT statement with pagination.
+
+    The caller is responsible for validating *sql* via
+    ``whatsaid.llm.text_to_sql.validate_and_clean_sql`` before calling this
+    function.  This function only handles pagination and result serialisation.
+
+    Args:
+        sql:       A clean, validated SQLite SELECT statement (no LIMIT/OFFSET).
+        db_path:   Path to the SQLite database file.
+        page:      1-based page number.
+        page_size: Maximum rows per page (default 200).
+
+    Returns:
+        A tuple of ``(column_names, rows_as_lists, total_count)`` where:
+        - ``column_names`` is a list of column header strings.
+        - ``rows_as_lists`` is a list of rows, each row being a plain list.
+        - ``total_count`` is the total number of rows matching the full query
+          (before pagination), obtained via a ``COUNT(*)`` wrapper subquery.
+
+    Raises:
+        ValueError: If the SQL cannot be executed (syntax error, unknown table,
+            etc.).  The message is prefixed with "SQL execution error:" to make
+            it easy for the route handler to detect.
+    """
+    conn = get_connection(db_path)
+    cur = conn.cursor()
+
+    # Defence-in-depth: strip trailing semicolons and any LIMIT/OFFSET the LLM
+    # may have injected — our pagination clause must be the authoritative one.
+    import re as _re
+    pageable_sql = sql.rstrip().rstrip(";").rstrip()
+    pageable_sql = _re.sub(
+        r"\s+LIMIT\s+\S+(\s+OFFSET\s+\S+)?$", "", pageable_sql, flags=_re.IGNORECASE
+    ).rstrip()
+
+    try:
+        # -- Count total rows using a subquery wrapper -------------------
+        cur.execute(f"SELECT COUNT(*) FROM ({pageable_sql}) AS _count_wrapper")
+        total_count: int = cur.fetchone()[0]
+
+        # -- Fetch the requested page ------------------------------------
+        offset = (page - 1) * page_size
+        cur.execute(f"{pageable_sql} LIMIT ? OFFSET ?", (page_size, offset))
+
+        columns: list[str] = [description[0] for description in cur.description]
+        rows: list[list] = [list(row) for row in cur.fetchall()]
+
+    except sqlite3.Error as exc:
+        conn.close()
+        raise ValueError(f"SQL execution error: {exc}") from exc
+
+    conn.close()
+    return columns, rows, total_count

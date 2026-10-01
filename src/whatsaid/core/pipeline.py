@@ -176,9 +176,15 @@ def run(
         chat_name: Pre-supplied chat name (skips the name prompt).
         yes:       Skip the confirmation prompt (for scripted use).
     """
+    from ..logging import get_logger
+    logger = get_logger(__name__)
+    
+    logger.info("Run started", extra={"filepath": filepath, "chat_name": chat_name})
     init_db(db_path)
 
     chat_id, is_new = _resolve_chat(chat_name, db_path, yes=yes)
+    logger.info("Chat resolved", extra={"chat_id": chat_id, "is_new": is_new})
+    
     chat = get_chat_by_id(chat_id, db_path)
     if not chat:
         raise RuntimeError("Chat not found after resolution.")
@@ -216,6 +222,7 @@ def run(
 
     print(f"--- Exporting to {final_output} ---")
     generate_excel(final_output, db_path=db_path)
+    logger.info("Export done", extra={"output_path": final_output, "new_resources": new_resources})
 
     verb = "Imported" if is_new else "Appended"
     print(f"\n✅ Done! {verb} {inserted:,} messages · {new_resources} new resources found.")

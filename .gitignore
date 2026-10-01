@@ -3,3 +3,9 @@ data/
 __pycache__/
 .venv/
 resources/
+
+.env
+# Logs
+logs/*
+*.db
+.DS_Store

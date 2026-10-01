@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, MessageCircle, Calendar, User } from 'lucide-react';
 import './Messages.css';
+import logger from '../lib/logger';
 
 export default function Messages() {
   const [messages, setMessages] = useState([]);
@@ -15,6 +16,7 @@ export default function Messages() {
   const [search, setSearch] = useState('');
 
   const fetchMessages = async () => {
+    logger.debug('messages:fetch', 'Fetch messages started', { page, search });
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -29,7 +31,9 @@ export default function Messages() {
       const data = await response.json();
       setMessages(data.items);
       setTotal(data.total);
+      logger.info('messages:fetch', 'Data loaded', { count: data.items.length, total: data.total });
     } catch (err) {
+      logger.warn('messages:fetch', 'API error', { detail: err.message });
       setError(err.message);
     } finally {
       setLoading(false);

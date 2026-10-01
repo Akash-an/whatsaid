@@ -43,9 +43,17 @@ The core functional page replacing the Excel sheet.
 *   A searchable, chronological view of the `messages` table.
 *   Useful for debugging or searching for specific keywords outside of extracted URLs.
 
+### 4.5. Ask Your Data (Natural Language Query) ✨
+*   A dedicated page with a glowing textarea that accepts plain English questions.
+*   Questions are sent to `POST /api/query`, which uses an LLM (OpenAI `gpt-4o-mini`) to generate a safe SQL SELECT, executes it, and returns paginated results.
+*   Three visual states: **Hero** (empty, shows example chips), **Loading** (shimmer skeleton + thinking dots), **Results** (SQL disclosure block + dynamic table + pagination).
+*   URL values in results are automatically rendered as clickable links.
+*   The generated SQL is shown in a collapsible disclosure block for full transparency.
+*   See [`docs/nl_query_design.md`](./nl_query_design.md) for the full design specification.
+
 ## 5. API Architecture
 
-The FastAPI backend will expose the following REST endpoints to serve the frontend:
+The FastAPI backend exposes the following REST endpoints to serve the frontend:
 
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
@@ -54,6 +62,7 @@ The FastAPI backend will expose the following REST endpoints to serve the fronte
 | `/api/resources` | `GET` | Returns paginated/filtered list of resources with joined context |
 | `/api/resources/{id}` | `PATCH`| Updates the `status` or metadata of a specific resource |
 | `/api/messages` | `GET` | Returns paginated list of raw messages |
+| `/api/query` | `POST` | Translates a natural-language question into SQL and returns paginated results |
 
 ## 6. System Architecture Update
 

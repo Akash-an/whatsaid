@@ -20,14 +20,20 @@ flowchart TD
     F --> G[Extracted_Resources.xlsx]
 
     subgraph Web UI Layer
-        C --> |READ / PATCH| H(FastAPI Server\nwhatsaid.api)
+        C --> |READ / PATCH / ENRICH| H(FastAPI Server\nwhatsaid.api)
         H --> |JSON REST| I(React Frontend\nVite)
         J((Browser)) --> |HTTP| I
+        I --> |POST /enrich| H
+        H --> |BackgroundTask| M[LangGraph Enrichment Workflow]
+        M --> |YouTube oEmbed / Meta oEmbed / HTML scrape| N[Platform Fetchers]
+        N --> |raw metadata| M
+        M --> |LLM synthesis| O[LLMClient]
+        O --> |title, tags, notes| M
+        M --> |UPDATE resources| C
     end
 
     subgraph Future Additions
         K[Live Watcher] -.-> |New Messages| C
-        L[AI / Metadata Enrichment] -.-> |Tags & Location| C
     end
 ```
 
@@ -48,10 +54,12 @@ Stores the unique, deduplicated resources extracted from the messages.
 *   `first_message_id`: Foreign key to `messages`, indicating who first shared it
 *   `original_url`: The raw URL as extracted
 *   `canonical_url`: **UNIQUE**. The URL stripped of tracking parameters (`?utm_source=...`)
-*   `platform`: Detected platform (Instagram, Airbnb, Google Maps, etc.)
-*   `tags`, `title`: Metadata fields (to be populated in V2)
+*   `platform`: Detected platform (Instagram, YouTube, Airbnb, Google Maps, etc.)
+*   `tags`, `title`, `notes`: Metadata fields — auto-populated by the LLM enrichment workflow
 *   `context`: Up to 3 surrounding messages providing conversational context
 *   `status`: For human review (defaults to "To Review")
+*   `enrichment_status`: LLM enrichment state — `pending | done | failed` (null if never enriched)
+*   `enriched_at`: ISO datetime when the last enrichment completed
 
 ## Package Structure
 
@@ -68,11 +76,15 @@ src/whatsaid/
 │   └── url_utils.py     # URL extraction, normalisation, platform detection
 ├── io/
 │   └── export.py        # Excel workbook generation
-└── api/                 # ✨ NEW — FastAPI REST layer
+├── llm/                 # LLM integration layer
+│   ├── client.py        # generic litellm wrapper
+│   ├── workflow.py      # LangGraph workflow skeleton
+│   └── text_to_sql.py   # ✨ NL→SQL: schema context, system prompt, validate_and_clean_sql()
+└── api/                 # FastAPI REST layer
     ├── __init__.py
     ├── main.py          # FastAPI app, CORS, uvicorn entry point
-    ├── routes.py        # All route handlers (/api/stats, /api/chats, …)
-    ├── queries.py       # Read-path SQL helpers (separate from core/db.py)
+    ├── routes.py        # All route handlers (/api/stats, /api/chats, /api/query …)
+    ├── queries.py       # Read-path SQL helpers + execute_raw_select()
     └── schemas.py       # Pydantic request/response models
 ```
 

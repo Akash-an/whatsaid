@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Calendar } from 'lucide-react';
 import './Chats.css';
+import logger from '../lib/logger';
 
 export default function Chats() {
   const [chats, setChats] = useState([]);
@@ -8,6 +9,7 @@ export default function Chats() {
   const [error, setError] = useState(null);
 
   const fetchChats = async () => {
+    logger.debug('chats:fetch', 'Fetching chats');
     setLoading(true);
     try {
       const response = await fetch('/api/chats');
@@ -15,7 +17,9 @@ export default function Chats() {
       
       const data = await response.json();
       setChats(data);
+      logger.info('chats:fetch', 'Chats loaded', { count: data.length });
     } catch (err) {
+      logger.warn('chats:fetch', 'API error', { detail: err.message });
       setError(err.message);
     } finally {
       setLoading(false);
