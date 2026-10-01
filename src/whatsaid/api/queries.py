@@ -102,6 +102,112 @@ def get_chats(db_path: str = DEFAULT_DB_PATH) -> list[dict]:
     return rows
 
 
+def get_chat_insights(
+    chat_id: int,
+    db_path: str = DEFAULT_DB_PATH,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+) -> Optional[dict]:
+    """Return chat insights bounded by optional dates."""
+    conn = get_connection(db_path)
+    cur = conn.cursor()
+    
+    cur.execute("SELECT name FROM chats WHERE id = ?", (chat_id,))
+    chat_row = cur.fetchone()
+    if not chat_row:
+        conn.close()
+        return None
+        
+    chat_name = chat_row["name"]
+
+    msg_conditions = ["chat_id = ?"]
+    msg_params = [chat_id]
+    
+    if date_from:
+        msg_conditions.append("DATE(timestamp) >= ?")
+        msg_params.append(date_from)
+    if date_to:
+        msg_conditions.append("DATE(timestamp) <= ?")
+        msg_params.append(date_to)
+        
+    where_clause = f"WHERE {' AND '.join(msg_conditions)}"
+    
+    cur.execute(f"SELECT COUNT(*) FROM messages {where_clause}", msg_params)
+    total_messages: int = cur.fetchone()[0]
+
+    cur.execute(f"""
+        SELECT COALESCE(sender, 'Unknown') AS sender, COUNT(*) AS count
+        FROM messages
+        {where_clause}
+        GROUP BY sender
+        ORDER BY count DESC
+    """, msg_params)
+    participants = _rows_to_dicts(cur.fetchall())
+
+    # Determine granularity based on date range (hourly if <= 31 days, otherwise daily)
+    time_format = "DATE(timestamp)"
+    if date_from and date_to:
+        from datetime import datetime
+        try:
+            d1 = datetime.strptime(date_from, "%Y-%m-%d")
+            d2 = datetime.strptime(date_to, "%Y-%m-%d")
+            if (d2 - d1).days <= 31:
+                time_format = "strftime('%Y-%m-%d %H:00', timestamp)"
+        except ValueError:
+            pass
+
+    cur.execute(f"""
+        SELECT {time_format} AS date, COUNT(*) AS count
+        FROM messages
+        {where_clause}
+          AND timestamp IS NOT NULL
+          AND DATE(timestamp) IS NOT NULL
+        GROUP BY {time_format}
+        ORDER BY date ASC
+    """, msg_params)
+    daily_activity = _rows_to_dicts(cur.fetchall())
+
+    # For top_platforms we join on resources -> messages
+    res_conditions = ["r.chat_id = ?"]
+    res_params = [chat_id]
+    
+    if date_from or date_to:
+        res_conditions.append("r.first_message_id = m.id")
+        if date_from:
+            res_conditions.append("DATE(m.timestamp) >= ?")
+            res_params.append(date_from)
+        if date_to:
+            res_conditions.append("DATE(m.timestamp) <= ?")
+            res_params.append(date_to)
+            
+    res_where = f"WHERE {' AND '.join(res_conditions)}"
+    
+    # If filtering by date, we must join messages
+    join_clause = "JOIN messages m ON r.first_message_id = m.id" if (date_from or date_to) else ""
+    
+    cur.execute(f"""
+        SELECT COALESCE(NULLIF(r.platform, ''), 'Unknown') AS platform, COUNT(*) AS count
+        FROM resources r
+        {join_clause}
+        {res_where}
+        GROUP BY platform
+        ORDER BY count DESC
+        LIMIT 10
+    """, res_params)
+    top_platforms = _rows_to_dicts(cur.fetchall())
+
+    conn.close()
+
+    return {
+        "chat_id": chat_id,
+        "chat_name": chat_name,
+        "total_messages": total_messages,
+        "participants": participants,
+        "daily_activity": daily_activity,
+        "top_platforms": top_platforms,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Resources
 # ---------------------------------------------------------------------------
@@ -375,3 +481,25 @@ def execute_raw_select(
 
     conn.close()
     return columns, rows, total_count
+
+def save_chat_summary(db_path: str, chat_id: int, date_from: str | None, date_to: str | None, summary: str) -> None:
+    conn = get_connection(db_path)
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO chat_summaries (chat_id, date_from, date_to, summary)
+        VALUES (?, ?, ?, ?)
+    """, (chat_id, date_from, date_to, summary))
+    conn.commit()
+    conn.close()
+
+def get_chat_summaries(db_path: str, chat_id: int) -> list[dict]:
+    conn = get_connection(db_path)
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT * FROM chat_summaries 
+        WHERE chat_id = ? 
+        ORDER BY created_at DESC
+    """, (chat_id,))
+    rows = _rows_to_dicts(cur.fetchall())
+    conn.close()
+    return rows

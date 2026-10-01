@@ -4,6 +4,7 @@ import { LayoutDashboard, Link2, MessageSquare, MessageCircle, Sparkles, Termina
 import Dashboard from './pages/Dashboard';
 import Resources from './pages/Resources';
 import Chats from './pages/Chats';
+import ChatInsights from './pages/ChatInsights';
 import Messages from './pages/Messages';
 import Ask from './pages/Ask';
 import Logs from './pages/Logs';
@@ -73,6 +74,7 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/resources" element={<Resources />} />
               <Route path="/chats" element={<Chats />} />
+              <Route path="/chats/:id" element={<ChatInsights />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/ask" element={<Ask />} />
               <Route path="/logs" element={<Logs />} />

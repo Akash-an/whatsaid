@@ -9,7 +9,7 @@ flowchart TD
     A[WhatsApp Export .txt / .zip] --> B(Parser)
 
     subgraph Pipeline
-        B --> |Parsed Messages| C[(SQLite DB: resources.db)]
+        B --> |Parsed Messages| C[(SQLite DB: data/resources.db)]
         C --> D(URL Extractor & Normalizer)
         D --> |Unique URLs| C
         C --> E(Context Enrichment)
@@ -23,13 +23,22 @@ flowchart TD
         C --> |READ / PATCH / ENRICH| H(FastAPI Server\nwhatsaid.api)
         H --> |JSON REST| I(React Frontend\nVite)
         J((Browser)) --> |HTTP| I
+        
+        %% Resource Enrichment Flow
         I --> |POST /enrich| H
         H --> |BackgroundTask| M[LangGraph Enrichment Workflow]
-        M --> |YouTube oEmbed / Meta oEmbed / HTML scrape| N[Platform Fetchers]
+        M --> |YouTube / Meta / HTML scrape| N[Platform Fetchers]
         N --> |raw metadata| M
         M --> |LLM synthesis| O[LLMClient]
         O --> |title, tags, notes| M
         M --> |UPDATE resources| C
+        
+        %% Chat Summarization Flow
+        I --> |POST /chats/:id/summary| H
+        H --> |Fetch & Chunk Messages| P[LangGraph Summarizer Workflow]
+        P --> |Batch Sub-Summaries| O
+        O --> |Proportional Rolling Summary| P
+        P --> |JSON Response| I
     end
 
     subgraph Future Additions
@@ -39,7 +48,7 @@ flowchart TD
 
 ## Data Model
 
-The application uses a lightweight relational schema stored in `resources.db`:
+The application uses a lightweight relational schema stored in `data/resources.db`:
 
 ### `messages` table
 Stores the raw chronological chat log.
@@ -86,6 +95,8 @@ src/whatsaid/
     ├── routes.py        # All route handlers (/api/stats, /api/chats, /api/query …)
     ├── queries.py       # Read-path SQL helpers + execute_raw_select()
     └── schemas.py       # Pydantic request/response models
+scripts/
+└── migrate_dates.py     # one-off database utility scripts
 ```
 
 > The package is installed in editable mode via `pyproject.toml` (`pip install -e .`),
@@ -95,7 +106,7 @@ src/whatsaid/
 
 ### `core/db.py`
 Manages the SQLite connection and schema. Every public function accepts an
-explicit `db_path` parameter (defaulting to `"resources.db"`) — there is no
+explicit `db_path` parameter (defaulting to `"data/resources.db"`) — there is no
 global path constant, making the module straightforward to test with a
 temporary file.
 
